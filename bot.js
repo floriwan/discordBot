@@ -1,39 +1,50 @@
-var Discord = require('discord.io');
-var logger = require('winston');
-var auth = require('./auth.json');
-// Configure logger settings
-logger.remove(logger.transports.Console);
-logger.add(new logger.transports.Console, {
-    colorize: true
+const Discord = require('discord.js');
+var conf = require('./config.json');
+var auth = require('./auth.json')
+const fs = require('fs');
+
+const client = new Discord.Client();
+client.commands = new Discord.Collection();
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
+// import command files and build command map
+for (const file of commandFiles) {
+    const command = require(`./commands/${file}`);
+    console.log(`add command ${command.name}`);
+    client.commands.set(command.name, command);
+}
+
+client.once('ready', () => {
+	console.log('running ...');
 });
-logger.level = 'debug';
-// Initialize Discord Bot
-var bot = new Discord.Client({
-   token: auth.token,
-   autorun: true
+
+client.on('message', message => {
+    
+    var prefix = conf.prefix;
+    
+    // return for commands not starting with prefix
+    if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+    // split the command 
+    const args = message.content.slice(prefix.length).split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    console.log(`-> ${command}`);
+
+    // command not found in map
+    if (!client.commands.has(command)) {
+        console.log(`   unkown command ${command}`);
+        return;
+    }
+    
+    // call the command
+    try {
+        client.commands.get(command).execute(message, args);
+    } catch (error) {
+        console.error(`   command error ${error}`);
+        message.reply(`there was an error trying to execute ${command} command!`);
+    }
+    
 });
-bot.on('ready', function (evt) {
-    logger.info('Connected');
-    logger.info('Logged in as: ');
-    logger.info(bot.username + ' - (' + bot.id + ')');
-});
-bot.on('message', function (user, userID, channelID, message, evt) {
-    // Our bot needs to know if it will execute a command
-    // It will listen for messages that will start with `!`
-    if (message.substring(0, 1) == '!') {
-        var args = message.substring(1).split(' ');
-        var cmd = args[0];
-       
-        args = args.splice(1);
-        switch(cmd) {
-            // !ping
-            case 'ping':
-                bot.sendMessage({
-                    to: channelID,
-                    message: 'Pong!'
-                });
-            break;
-            // Just add any case commands if you want to..
-         }
-     }
-});
+
+client.login(auth.token);

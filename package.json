@@ -1,11 +1,12 @@
 {
-  "name": "greeter-bot",
+  "name": "fcb-bot",
   "version": "1.0.0",
-  "description": "My First Discord Bot",
+  "description": "FlyCaribbean Discord Bot",
   "main": "bot.js",
   "author": "Florian",
   "dependencies": {
     "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
+    "discord.js": "^11.5.1",
     "winston": "^3.2.1"
   }
 }
