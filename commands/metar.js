@@ -11,10 +11,18 @@ function DegToDirection(degrees) {
     return arr[(val % 16)];
 }
 
-function knotsTokmh(knots) {
-    return parseInt(knots, 10) * 1.852;
+function hpaToInhg(value) {
+    return Math.round( (parseInt(value, 10) * 0.030) * 100 ) / 100;
 }
 
+function InhgToHpa(value) {
+    var floatValue = parseFloat(value);
+    return Math.round(floatValue * 33.7685);
+}
+
+function knotsTokmh(knots) {
+    return Math.round( (parseInt(knots, 10) * 1.852) *10 ) / 10;
+}
 
 module.exports = {
 
@@ -52,7 +60,7 @@ module.exports = {
                 if (Http.readyState == 4 && Http.status == 200) {
                     
                     if (Http.responseText) {
-                        console.log("   we have a response ...");
+                        //console.log("   we have a response ...");
                         parser = new DomParser();
                         xmlDoc = parser.parseFromString(Http.responseText);
                 
@@ -63,20 +71,25 @@ module.exports = {
                         
                         const metarJson = parseMETAR(metarString);
                         var windString = "wind from " + DegToDirection(metarJson.wind.direction) + " (" + metarJson.wind.direction + " degrees) with " + metarJson.wind.speed + " knots (" + knotsTokmh(metarJson.wind.speed) + " km/h)";
-                        
-                        const exampleEmbed = new Discord.RichEmbed()
-                        .setTitle('information for ' + icaoCode.toUpperCase())
-                        .addField('metar', metarString)
-                        .addField("wind information", windString);
-                        
-                        return message.channel.send(exampleEmbed);
-                        
-                        /*
-                        retString = "**metar information for " + icaoCode.toUpperCase() + "**\n"
-                        retString += "\`" + metarString + "\`\n";
-                        retString += "wind from " + metarJson.wind.direction + " degrees with " + metarJson.wind.speed + "kts\n";
 
-                        return message.channel.send(`${retString}`);*/                    
+                        if(metarJson.altimeterInHpa) {
+                            var pressureString = metarJson.altimeterInHpa + " hPa (" + hpaToInhg(metarJson.altimeterInHpa) + " inHg)";
+                        } else if (metarJson.altimeterInHg) {
+                            var pressureString = metarJson.altimeterInHg + " inHg (" + InhgToHpa(metarJson.altimeterInHg) + " hPa)";
+                        } else {
+                            var pressureString = "undefined";
+                        }
+
+                        var titleString = "information for " + icaoCode.toUpperCase() + " issued " + metarJson.time.toString().substring(0, 15) + " at " + metarJson.time.getHours() + ":" + metarJson.time.getMinutes();
+
+                        const exampleEmbed = new Discord.RichEmbed()
+                        //.setTitle('information for ' + icaoCode.toUpperCase())
+                        .setTitle(titleString)
+                        .addField('metar', metarString)
+                        .addField("wind information", windString)
+                        .addField('pressure', pressureString);
+                        return message.channel.send(exampleEmbed);
+                                           
                     } else {
                         console.log("<- ERROR no response");
                     }
@@ -89,6 +102,10 @@ module.exports = {
 };
 
 /*
+Sun Dec 15 2019 14:50:43 GMT+0100 (Central European Standard Time)
+
+"time": "2013-12-17T19:50:38.219Z",
+
 https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&stationString='.$icao.'&hoursBeforeNow=1
 mostRecent=true
 https://www.aviationweather.gov/metar/data?ids=KDEN&format=decoded&taf=on
