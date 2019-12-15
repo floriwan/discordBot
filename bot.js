@@ -27,22 +27,36 @@ client.on('message', message => {
 
     // split the command 
     const args = message.content.slice(prefix.length).split(/ +/);
-    const command = args.shift().toLowerCase();
+    const commandName = args.shift().toLowerCase();
 
-    console.log(`-> ${command}`);
+    console.log(`-> ${commandName}`);
 
     // command not found in map
-    if (!client.commands.has(command)) {
-        console.log(`   unkown command ${command}`);
+    if (!client.commands.has(commandName)) {
+        console.log(`   unkown command ${commandName}`);
         return;
+    }
+    
+    
+    const command = client.commands.get(commandName);
+    
+    // check if we need some arguments
+    if (command.args && !args.length) {
+        let replyMsg = `${message.author} you didn't provide any arguments!`;
+
+        if (command.usage) {
+            replyMsg += `\nUsage: \`${prefix}${command.name} ${command.usage}\``;
+        }
+        
+        return message.channel.send(replyMsg);
     }
     
     // call the command
     try {
-        client.commands.get(command).execute(message, args);
+        command.execute(message, args);
     } catch (error) {
         console.error(`   command error ${error}`);
-        message.reply(`there was an error trying to execute ${command} command!`);
+        message.reply(`there was an error trying to execute ${commandName} command!`);
     }
     
 });
