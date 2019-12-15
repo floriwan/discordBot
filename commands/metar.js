@@ -47,7 +47,7 @@ module.exports = {
             console.log(`   airport code: ${icaoCode}`);
                         
             const Http = new XMLHttpRequest();
-            const url='https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&mostRecent=true&hoursBeforeNow=1&stationString='+icaoCode
+            const url='https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&mostRecent=true&hoursBeforeNow=2&stationString='+icaoCode
             //console.log(`   ${url}`);
             
             Http.open("GET", url);
@@ -65,7 +65,19 @@ module.exports = {
                         xmlDoc = parser.parseFromString(Http.responseText);
                 
                         var xmlMetar = xmlDoc.getElementsByTagName("raw_text");
+
+                        if (xmlMetar.length === 0) {
+                            console.log("<- no metar information available ...");
+                            return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
+                        }
+
                         var metarString = xmlMetar[0].toString();
+
+                        if (metarString.length === 0) {
+                            console.log("<- no metar information available ...");
+                            return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
+                        }
+
                         metarString = metarString.substring(10, metarString.length-11);
                         console.log("<- " + metarString);
                         
