@@ -62,7 +62,7 @@ module.exports = {
                         console.log("<- " + metarString);
                         
                         const metarJson = parseMETAR(metarString);
-                        var windString = "wind from " + DegToDirection(metarJson.wind.direction) + "(" + metarJson.wind.direction + " degrees) with " + metarJson.wind.speed + "knots (" + knotsTokmh(metarJson.wind.speed) + "km/h)";
+                        var windString = "wind from " + DegToDirection(metarJson.wind.direction) + " (" + metarJson.wind.direction + " degrees) with " + metarJson.wind.speed + " knots (" + knotsTokmh(metarJson.wind.speed) + " km/h)";
                         
                         const exampleEmbed = new Discord.RichEmbed()
                         .setTitle('information for ' + icaoCode.toUpperCase())
