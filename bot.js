@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 var conf = require('./config.json');
 var auth = require('./auth.json')
+var mysql = require('mysql');
 const fs = require('fs');
 
 const client = new Discord.Client();
@@ -13,6 +14,20 @@ for (const file of commandFiles) {
     console.log(`add command ${command.name}`);
     client.commands.set(command.name, command);
 }
+
+var con = mysql.createConnection({
+  host: "localhost",
+  user: conf.dbuser,
+  password: conf.dbpass
+});
+
+con.connect(function(err) {
+        if (err) {
+            concole.log("database connection error");
+            throw err;
+        }
+        console.log("database connected ...");
+    });
 
 client.once('ready', () => {
 	console.log('running ...');
@@ -53,7 +68,7 @@ client.on('message', message => {
     
     // call the command
     try {
-        command.execute(message, args);
+        command.execute(message, args, con);
     } catch (error) {
         console.error(`   command error ${error}`);
         message.reply(`there was an error trying to execute ${commandName} command!`);

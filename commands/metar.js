@@ -1,4 +1,5 @@
 
+
 function DegToDirection(degrees) {
     const deg = parseInt(degrees, 10);
     
@@ -24,6 +25,30 @@ function knotsTokmh(knots) {
     return Math.round( (parseInt(knots, 10) * 1.852) *10 ) / 10;
 }
 
+function getAirportName(message, icao, metar, wind, pressure, ident, con) {
+
+    con.query("select name from botbox.airports where ident like \"" + ident + "\"",
+         function (err, result) {
+            if(err) throw err;
+            sendMsg(message, icao, metar, wind, pressure, result[0].name);
+        });
+}
+
+function sendMsg(message, icao, metar, wind, pressure, airportName) {
+
+    var titleString = "information for " + airportName + " (" + icao.toUpperCase() + ")\nissued " +
+         metarJson.time.toString().substring(0, 15) + " at " + metarJson.time.getHours() + ":" +
+         metarJson.time.getMinutes();
+
+    const exampleEmbed = new Discord.RichEmbed()
+        .setTitle(titleString)
+        .addField('metar', metar)
+        .addField("wind information", wind)
+        .addField('pressure', pressure);
+        return message.channel.send(exampleEmbed);
+}
+
+
 module.exports = {
 
     name: 'metar',
@@ -31,21 +56,21 @@ module.exports = {
     args: true,
     usage: '<icaocode>',
     
-    execute(message, args) {
+    execute(message, args, con) {
 
-        const Discord = require('discord.js');
+        Discord = require('discord.js');
         var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest
         var DomParser = require('xmldom').DOMParser
         var regex = RegExp('[a-z]{4}');
         var parseMETAR = require("metar");
-        
+
         const icaoCode = args[0].toLowerCase();
         
         if (!regex.test(icaoCode)) {
             return message.channel.send(`${message.author} you didn't provide a valid ICAO airport code!`);
         } else {
             console.log(`   airport code: ${icaoCode}`);
-                        
+            
             const Http = new XMLHttpRequest();
             const url='https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&mostRecent=true&hoursBeforeNow=2&stationString='+icaoCode
             //console.log(`   ${url}`);
@@ -59,53 +84,47 @@ module.exports = {
                 
                 if (Http.readyState == 4 && Http.status == 200) {
                     
-                    if (Http.responseText) {
-                        //console.log("   we have a response ...");
-                        parser = new DomParser();
-                        xmlDoc = parser.parseFromString(Http.responseText);
-                
-                        var xmlMetar = xmlDoc.getElementsByTagName("raw_text");
-
-                        if (xmlMetar.length === 0) {
-                            console.log("<- no metar information available ...");
-                            return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
-                        }
-
-                        var metarString = xmlMetar[0].toString();
-
-                        if (metarString.length === 0) {
-                            console.log("<- no metar information available ...");
-                            return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
-                        }
-
-                        metarString = metarString.substring(10, metarString.length-11);
-                        console.log("<- " + metarString);
-                        
-                        const metarJson = parseMETAR(metarString);
-                        var windString = "wind from " + DegToDirection(metarJson.wind.direction) + " (" + metarJson.wind.direction + " degrees) with " + metarJson.wind.speed + " knots (" + knotsTokmh(metarJson.wind.speed) + " km/h)";
-
-                        if(metarJson.altimeterInHpa) {
-                            var pressureString = metarJson.altimeterInHpa + " hPa (" + hpaToInhg(metarJson.altimeterInHpa) + " inHg)";
-                        } else if (metarJson.altimeterInHg) {
-                            var pressureString = metarJson.altimeterInHg + " inHg (" + InhgToHpa(metarJson.altimeterInHg) + " hPa)";
-                        } else {
-                            var pressureString = "undefined";
-                        }
-
-                        var titleString = "information for " + icaoCode.toUpperCase() + " issued " + metarJson.time.toString().substring(0, 15) + " at " + metarJson.time.getHours() + ":" + metarJson.time.getMinutes();
-
-                        const exampleEmbed = new Discord.RichEmbed()
-                        //.setTitle('information for ' + icaoCode.toUpperCase())
-                        .setTitle(titleString)
-                        .addField('metar', metarString)
-                        .addField("wind information", windString)
-                        .addField('pressure', pressureString);
-                        return message.channel.send(exampleEmbed);
-                                           
-                    } else {
+                    if (!Http.responseText) {
                         console.log("<- ERROR no response");
+                        return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
                     }
-                    
+
+                    //console.log("   we have a response ...");
+                    parser = new DomParser();
+                    xmlDoc = parser.parseFromString(Http.responseText);
+                
+                    var xmlMetar = xmlDoc.getElementsByTagName("raw_text");
+
+                    if (xmlMetar.length === 0) {
+                        contitleStringsole.log("<- no metar information available ...");
+                        return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
+                    }
+
+                    var metarString = xmlMetar[0].toString();
+
+                    if (metarString.length === 0) {
+                        console.log("<- no metar information available ...");
+                        return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
+                    }
+
+                    metarString = metarString.substring(10, metarString.length-11);
+                    console.log("<- " + metarString);
+
+                    metarJson = parseMETAR(metarString);
+                    var windString = "wind from " + DegToDirection(metarJson.wind.direction) + " (" + metarJson.wind.direction + " degrees) with " + metarJson.wind.speed + " knots (" + knotsTokmh(metarJson.wind.speed) + " km/h)";
+
+                    if(metarJson.altimeterInHpa) {
+                        var pressureString = metarJson.altimeterInHpa + " hPa (" + hpaToInhg(metarJson.altimeterInHpa) + " inHg)";
+                    } else if (metarJson.altimeterInHg) {
+                        var pressureString = metarJson.altimeterInHg + " inHg (" + InhgToHpa(metarJson.altimeterInHg) + " hPa)";
+                    } else {
+                        var pressureString = "undefined";
+                    }
+
+                    var airportName = getAirportName(message, icaoCode, metarString, windString,
+                        pressureString, icaoCode.toUpperCase(), con);
+
+
                 }
             }
         }
