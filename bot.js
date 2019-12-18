@@ -15,19 +15,36 @@ for (const file of commandFiles) {
     client.commands.set(command.name, command);
 }
 
-var con = mysql.createConnection({
-  host: "localhost",
-  user: conf.dbuser,
-  password: conf.dbpass
-});
+var db_config = {
+    host: "localhost",
+    user: conf.dbuser,
+    password: conf.dbpass
+}
 
-con.connect(function(err) {
-        if (err) {
-            concole.log("database connection error");
+var connection;
+
+function handleDisconnect() {
+    connection = mysql.createConnection(db_config);
+
+    connection.connect(function(err) {
+        if(err) {
+            console.log("error when connection to database: ", err);
+            setTimeout(handleDisconnect, 2000);
+        }
+    });
+    
+    connection.on('error', function(err) {
+        console.log("database error", err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            handleDisconnect();
+        } else {
             throw err;
         }
-        console.log("database connected ...");
     });
+}
+
+// create database connection hand handle disconnect issues
+handleDisconnect();
 
 client.once('ready', () => {
 	console.log('running ...');
@@ -38,7 +55,7 @@ client.on('message', message => {
     var prefix = conf.prefix;
     
     // return for commands not starting with prefix
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
+    if (!message.content.startsWith(prefix) || message.connectionauthor.bot) return;
 
     // split the command 
     const args = message.content.slice(prefix.length).split(/ +/);
@@ -68,7 +85,7 @@ client.on('message', message => {
     
     // call the command
     try {
-        command.execute(message, args, con);
+        command.execute(message, args, connection);
     } catch (error) {
         console.error(`   command error ${error}`);
         message.reply(`there was an error trying to execute ${commandName} command!`);
