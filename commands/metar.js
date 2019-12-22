@@ -1,4 +1,16 @@
+var conf = require('../config.json');
+var mysql = require('mysql');
 
+var metarString = '';
+var airportName = '';
+var icaoCode = '';
+var metarJson;
+
+var db_config = {
+    host: "localhost",
+    user: conf.dbuser,
+    password: conf.dbpass
+}
 
 function DegToDirection(degrees) {
     const deg = parseInt(degrees, 10);
@@ -25,29 +37,63 @@ function knotsTokmh(knots) {
     return Math.round( (parseInt(knots, 10) * 1.852) *10 ) / 10;
 }
 
-function getAirportName(message, icao, metar, wind, pressure, ident, con) {
 
-    con.query("select name from botbox.airports where ident like \"" + ident + "\"",
-         function (err, result) {
-            if(err) throw err;
-            sendMsg(message, icao, metar, wind, pressure, result[0].name);
+function getAirportName(connection) {
+
+    return new Promise((resolve, reject) => {
+        console.log("select name from botbox.airports where ident like \"" + 
+            icaoCode.toUpperCase() + "\"");
+        connection.query("select name from botbox.airports where ident like \"" + 
+            icaoCode.toUpperCase() + "\"", function (err, result) {
+            if(err) reject(err);
+            //console.log ("dbrequest " + result);
+            resolve(result[0].name);
         });
+    });
+
 }
 
-function sendMsg(message, icao, metar, wind, pressure, airportName) {
 
-    var titleString = "information for " + airportName + " (" + icao.toUpperCase() + ")\nissued " +
-         metarJson.time.toString().substring(0, 15) + " at " + metarJson.time.getHours() + ":" +
-         metarJson.time.getMinutes();
+async function getAllDBResults(message) {
 
+    const connection = mysql.createConnection(db_config);
+    airportName = await getAirportName(connection);
+
+    //console.log("getAllDBResults " + airportName);
+
+    if ( airportName === '') {
+        throw new Error("no airport name found in DB")
+    }
+
+    var windString = "wind from " + DegToDirection(metarJson.wind.direction) + 
+        " (" + metarJson.wind.direction + " degrees) with " + 
+        metarJson.wind.speed + " knots (" + knotsTokmh(metarJson.wind.speed) + " km/h)";
+
+    var titleString = "information for " + airportName + 
+        " (" + icaoCode.toUpperCase() + ")\nissued " +
+    metarJson.time.toString().substring(0, 15) + " at " + 
+    metarJson.time.getHours() + ":" + metarJson.time.getMinutes();
+    //console.log(titleString);
+
+    if(metarJson.altimeterInHpa) {
+        var pressureString = metarJson.altimeterInHpa + " hPa (" +
+            hpaToInhg(metarJson.altimeterInHpa) + " inHg)";
+    } else if (metarJson.altimeterInHg) {
+        var pressureString = metarJson.altimeterInHg + " inHg (" +
+            InhgToHpa(metarJson.altimeterInHg) + " hPa)";
+    } else {
+        var pressureString = "undefined";
+    }
+
+    console.log("channel send");
     const exampleEmbed = new Discord.RichEmbed()
         .setTitle(titleString)
-        .addField('metar', metar)
-        .addField("wind information", wind)
-        .addField('pressure', pressure);
-        return message.channel.send(exampleEmbed);
-}
+        .addField('metar', metarString)
+        .addField("wind information", windString)
+        .addField('pressure', pressureString);
+    return message.channel.send(exampleEmbed);
 
+}
 
 module.exports = {
 
@@ -64,10 +110,10 @@ module.exports = {
         var regex = RegExp('[a-z]{4}');
         var parseMETAR = require("metar");
 
-        const icaoCode = args[0].toLowerCase();
+        icaoCode = args[0].toLowerCase();
         
         if (!regex.test(icaoCode)) {
-            return message.channel.send(`${message.author} you didn't provide a valid ICAO airport code!`);
+            return message.channel.send(`${m|| message.connectionauthor.botessage.author} you didn't provide a valid ICAO airport code!`);
         } else {
             console.log(`   airport code: ${icaoCode}`);
             
@@ -100,7 +146,7 @@ module.exports = {
                         return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
                     }
 
-                    var metarString = xmlMetar[0].toString();
+                    metarString = xmlMetar[0].toString();
 
                     if (metarString.length === 0) {
                         console.log("<- no metar information available ...");
@@ -111,20 +157,8 @@ module.exports = {
                     console.log("<- " + metarString);
 
                     metarJson = parseMETAR(metarString);
-                    var windString = "wind from " + DegToDirection(metarJson.wind.direction) + " (" + metarJson.wind.direction + " degrees) with " + metarJson.wind.speed + " knots (" + knotsTokmh(metarJson.wind.speed) + " km/h)";
-
-                    if(metarJson.altimeterInHpa) {
-                        var pressureString = metarJson.altimeterInHpa + " hPa (" + hpaToInhg(metarJson.altimeterInHpa) + " inHg)";
-                    } else if (metarJson.altimeterInHg) {
-                        var pressureString = metarJson.altimeterInHg + " inHg (" + InhgToHpa(metarJson.altimeterInHg) + " hPa)";
-                    } else {
-                        var pressureString = "undefined";
-                    }
-
-                    var airportName = getAirportName(message, icaoCode, metarString, windString,
-                        pressureString, icaoCode.toUpperCase(), con);
-
-
+                    
+                    return getAllDBResults(message);
                 }
             }
         }

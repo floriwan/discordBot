@@ -55,7 +55,7 @@ client.on('message', message => {
     var prefix = conf.prefix;
     
     // return for commands not starting with prefix
-    if (!message.content.startsWith(prefix) || message.connectionauthor.bot) return;
+    if (!message.content.startsWith(prefix) ) return;
 
     // split the command 
     const args = message.content.slice(prefix.length).split(/ +/);
