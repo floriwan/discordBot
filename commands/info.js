@@ -65,12 +65,14 @@ async function getAllDBResults(message) {
 
     allRunways = "";
     for (let runway of runways) {
-        allRunways += runway.le_ident + "/" + runway.he_ident + " length: " + runway.length_ft + "ft (" +
+        allRunways += "**" + runway.le_ident + "/" + runway.he_ident + "** length: " + 
+            runway.length_ft + "ft (" +
             ftToM(runway.length_ft) + "m) surface: " + runway.surface + "\n";
     }
     if (runways === "") runways = "N/A";
 
     const exampleEmbed = new Discord.RichEmbed()
+        .setColor('#e59866')
         .setTitle(titleString)
         .addField('elevation', elevation)
         .addField('coordinates', coordinates)
