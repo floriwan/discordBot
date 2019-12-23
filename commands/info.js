@@ -28,11 +28,20 @@ function getRunways(connection, id) {
     });
 }
 
+function getFrequencies(connection, id) {
+    return new Promise((resolve, reject) => {
+        connection.query("select * from botbox.airportFrequencies where airport_ref = \"" +
+            id + "\"", function (err, result) {
+            if(err) reject(err);
+            resolve(result);
+        });
+    });
+}
+
+
 function getAirport(connection) {
 
     return new Promise((resolve, reject) => {
-console.log("select * from botbox.airports where ident like \"" + 
-            icaoCode.toUpperCase() + "\"");
         connection.query("select * from botbox.airports where ident like \"" + 
             icaoCode.toUpperCase() + "\"", function (err, result) {
             if(err) reject(err);
@@ -51,6 +60,8 @@ async function getAllDBResults(message) {
     console.log("airport: " + airport.name);
     runways = await getRunways(connection, airport.id);
     console.log("runways found: " + runways.length);
+    frequencies = await getFrequencies(connection, airport.id);
+    console.log("frequencies found: " + frequencies.length);
 
     var titleString = "information for " + airport.name + " (" + icaoCode.toUpperCase() + ")";
 
@@ -69,7 +80,15 @@ async function getAllDBResults(message) {
             runway.length_ft + "ft (" +
             ftToM(runway.length_ft) + "m) surface: " + runway.surface + "\n";
     }
-    if (runways === "") runways = "N/A";
+    if (allRunways === "") allRunways = "N/A";
+
+    allFrequencies = "";
+    for (let frequency of frequencies) {
+        allFrequencies += "**" +  frequency.description + "** (" + 
+            frequency.type + ") " + frequency.frequency_mhz + "Mhz\n"; 	
+    }
+    if (allFrequencies === "") allFrequencies = "N/A";
+
 
     const exampleEmbed = new Discord.RichEmbed()
         .setColor('#e59866')
@@ -79,43 +98,12 @@ async function getAllDBResults(message) {
         .addField('ICAO', icaoCode.toUpperCase(), true)
         .addField('IATA', airport.iata_code, true)
         .addField('runways', allRunways)
+        .addField('frequencies', allFrequencies)
         .addField('website', website);
     return message.channel.send(exampleEmbed);
 
     //console.log("getAllDBResults " + airportName);
-/*
-    if ( airportName === '') {
-        throw new Error("no airport name found in DB")
-    }
 
-    var windString = "wind from " + DegToDirection(metarJson.wind.direction) + 
-        " (" + metarJson.wind.direction + " degrees) with " + 
-        metarJson.wind.speed + " knots (" + knotsTokmh(metarJson.wind.speed) + " km/h)";
-
-    var titleString = "information for " + airportName + 
-        " (" + icaoCode.toUpperCase() + ")\nissued " +
-    metarJson.time.toString().substring(0, 15) + " at " + 
-    metarJson.time.getHours() + ":" + metarJson.time.getMinutes();
-    //console.log(titleString);
-
-    if(metarJson.altimeterInHpa) {}
-        var pressureString = metarJson.altimeterInHpa + " hPa (" +
-            hpaToInhg(metarJson.altimeterInHpa) + " inHg)";
-    } else if (metarJson.altimeterInHg) {
-        var pressureString = metarJson.altimeterInHg + " inHg (" +
-            InhgToHpa(metarJson.altimeterInHg) + " hPa)";
-    } else {
-        var pressureString = "undefined";
-    }
-
-    console.log("channel send");
-    const exampleEmbed = new Discord.RichEmbed()
-        .setTitle(titleString)
-        .addField('metar', metarString)
-        .addField("wind information", windString)
-        .addField('pressure', pressureString);
-    return message.channel.send(exampleEmbed);
-*/
 }
 
 module.exports = {
