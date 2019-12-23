@@ -15,37 +15,6 @@ for (const file of commandFiles) {
     client.commands.set(command.name, command);
 }
 
-var db_config = {
-    host: "localhost",
-    user: conf.dbuser,
-    password: conf.dbpass
-}
-
-var connection;
-
-function handleDisconnect() {
-    connection = mysql.createConnection(db_config);
-
-    connection.connect(function(err) {
-        if(err) {
-            console.log("error when connection to database: ", err);
-            setTimeout(handleDisconnect, 2000);
-        }
-    });
-    
-    connection.on('error', function(err) {
-        console.log("database error", err);
-        if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
-            handleDisconnect();
-        } else {
-            throw err;
-        }
-    });
-}
-
-// create database connection hand handle disconnect issues
-handleDisconnect();
-
 client.once('ready', () => {
 	console.log('running ...');
 });
@@ -85,7 +54,7 @@ client.on('message', message => {
     
     // call the command
     try {
-        command.execute(message, args, connection);
+        command.execute(message, args);
     } catch (error) {
         console.error(`   command error ${error}`);
         message.reply(`there was an error trying to execute ${commandName} command!`);

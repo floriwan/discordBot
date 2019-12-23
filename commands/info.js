@@ -125,7 +125,7 @@ module.exports = {
     args: true,
     usage: '<icaocode>',
     
-    execute(message, args, con) {
+    execute(message, args) {
 
         Discord = require('discord.js');
         var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest
