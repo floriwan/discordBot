@@ -57,11 +57,17 @@ async function getAllDBResults(message) {
     const connection = mysql.createConnection(db_config);
 
     airport = await getAirport(connection);
-    console.log("airport: " + airport.name);
+
+    if (!airport) {
+        return message.reply("Sorry, no airport found with ICAO code " + icaoCode.toUpperCase());
+    }
+
+    console.log("   airport: " + airport.name);
     runways = await getRunways(connection, airport.id);
-    console.log("runways found: " + runways.length);
+    console.log("   runways found: " + runways.length);
     frequencies = await getFrequencies(connection, airport.id);
-    console.log("frequencies found: " + frequencies.length);
+    console.log("   frequencies found: " + frequencies.length);
+    connection.end();
 
     var titleString = "information for " + airport.name + " (" + icaoCode.toUpperCase() + ")";
 

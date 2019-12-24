@@ -58,6 +58,7 @@ async function getAllDBResults(message) {
 
     const connection = mysql.createConnection(db_config);
     airportName = await getAirportName(connection);
+    connection.end();
 
     //console.log("getAllDBResults " + airportName);
 
@@ -142,7 +143,7 @@ module.exports = {
                     var xmlMetar = xmlDoc.getElementsByTagName("raw_text");
 
                     if (xmlMetar.length === 0) {
-                        contitleStringsole.log("<- no metar information available ...");
+                        console.log("<- no metar information available ...");
                         return message.reply("Sorry, no METAR information for " + icaoCode.toUpperCase());
                     }
 
