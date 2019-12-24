@@ -37,6 +37,12 @@ function knotsTokmh(knots) {
     return Math.round( (parseInt(knots, 10) * 1.852) *10 ) / 10;
 }
 
+function CelsiusToFahrenheit(celsius) {
+    var floatValue = parseFloat(celsius);
+    return Math.round( ((floatValue * (9/5) + 32)) * 10 ) / 10;
+}
+
+//(0 °C × 9/5) + 32 = 32 °F
 
 function getAirportName(connection) {
 
@@ -86,12 +92,16 @@ async function getAllDBResults(message) {
         var pressureString = "undefined";
     }
 
-    console.log("channel send");
+    tempString = metarJson.temperature + "°C (" + CelsiusToFahrenheit(metarJson.temperature) + "°F)";
+    dewPString = metarJson.dewpoint + "°C (" + CelsiusToFahrenheit(metarJson.dewpoint) + "°F)";
+
     const exampleEmbed = new Discord.RichEmbed()
         .setTitle(titleString)
         .addField('metar', metarString)
         .addField("wind information", windString)
-        .addField('pressure', pressureString);
+        .addField('pressure', pressureString)
+        .addField('temperature', tempString, true)
+        .addField('dewpoint', dewPString, true);
     return message.channel.send(exampleEmbed);
 
 }
