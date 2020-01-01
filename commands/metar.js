@@ -62,7 +62,7 @@ function getAirportName(connection) {
 
 async function getAllDBResults(message) {
 
-    const connection = mysql.createConnection(db_config);
+    connection = mysql.createConnection(db_config);
     airportName = await getAirportName(connection);
     connection.end();
 
